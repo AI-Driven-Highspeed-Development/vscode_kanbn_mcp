@@ -2,5 +2,5 @@ version: 0.0.1
 folder_path: mcps/vscode_kanbn_mcp
 type: mcp
 requirements:
-  - "mcp[cli]>=1.9.0"
+  - https://github.com/AI-Driven-Highspeed-Development/Logger-Util.git
 repo_url: https://github.com/AI-Driven-Highspeed-Development/vscode_kanbn_mcp.git

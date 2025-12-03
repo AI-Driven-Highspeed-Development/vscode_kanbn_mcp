@@ -1,0 +1,2 @@
+# VSCode Kanbn MCP dependencies
+mcp[cli]>=1.9.0
