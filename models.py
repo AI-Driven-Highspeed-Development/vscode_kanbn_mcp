@@ -172,6 +172,39 @@ class KanbnBoard:
             self.remove_task_from_column(task_id, current)
         self.add_task_to_column(task_id, target_column)
         return current
+    
+    def reorder_tasks(self, column: str, task_ids: list[str]) -> list[str]:
+        """Reorder tasks within a column.
+        
+        Args:
+            column: The column to reorder tasks in
+            task_ids: Ordered list of task IDs (must match existing tasks in column)
+        
+        Returns:
+            The previous order of task IDs
+        
+        Raises:
+            ValueError: If column doesn't exist or task_ids don't match
+        """
+        if column not in self._columns:
+            raise ValueError(f"Column '{column}' does not exist")
+        
+        current_tasks = set(self._columns[column])
+        new_tasks = set(task_ids)
+        
+        if current_tasks != new_tasks:
+            missing = current_tasks - new_tasks
+            extra = new_tasks - current_tasks
+            errors = []
+            if missing:
+                errors.append(f"Missing tasks: {missing}")
+            if extra:
+                errors.append(f"Unknown tasks: {extra}")
+            raise ValueError("; ".join(errors))
+        
+        previous_order = self._columns[column].copy()
+        self._columns[column] = task_ids
+        return previous_order
 
 
 class KanbnTask:

@@ -437,6 +437,39 @@ class KanbnController:
         results["success"] = results["failed_count"] == 0
         
         return results
+    
+    def reorder_tasks(
+        self,
+        column: str,
+        task_ids: list[str],
+        kanbn_path: str | None = None,
+    ) -> dict[str, Any]:
+        """Reorder tasks within a column."""
+        board = self._get_board(kanbn_path)
+        
+        if not board.exists:
+            return {"success": False, "error": "Board not found"}
+        
+        try:
+            board.load()
+            
+            if column not in board.get_columns():
+                return {"success": False, "error": f"Column '{column}' not found."}
+            
+            previous_order = board.reorder_tasks(column, task_ids)
+            board.save()
+            
+            return {
+                "success": True,
+                "column": column,
+                "previous_order": previous_order,
+                "new_order": task_ids,
+            }
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
+        except Exception as e:
+            log.error(f"Failed to reorder tasks: {e}")
+            return {"success": False, "error": str(e)}
 
 
 # --- Module-level convenience instance ---

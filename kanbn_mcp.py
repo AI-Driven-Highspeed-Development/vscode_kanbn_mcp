@@ -260,6 +260,32 @@ def add_column(
     )
 
 
+@mcp.tool()
+def reorder_tasks(
+    column: str,
+    task_ids: list[str],
+    kanbn_path: str | None = None,
+) -> dict:
+    """Reorder tasks within a column.
+    
+    Use this to sort tasks by priority or any other order within a column.
+    The task_ids list must contain exactly the same tasks currently in the column.
+    
+    Args:
+        column: The column name (e.g., "Backlog")
+        task_ids: Ordered list of task IDs. First item appears at top of column.
+        kanbn_path: Optional path to the .kanbn directory
+    
+    Returns:
+        dict with success status, previous_order, and new_order
+    """
+    return _get_kanbn().reorder_tasks(
+        column=column,
+        task_ids=task_ids,
+        kanbn_path=kanbn_path,
+    )
+
+
 # --- Utility Tools ---
 
 
