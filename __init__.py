@@ -31,6 +31,9 @@ from mcps.vscode_kanbn_mcp.constants import (
 )
 from mcps.vscode_kanbn_mcp.kanbn_controller import KanbnController, get_kanbn_mcp
 from mcps.vscode_kanbn_mcp.models import KanbnBoard, KanbnTask
+from mcps.vscode_kanbn_mcp.refresh import main as mcp_refresh_main
+
+mcp_refresh_main()
 
 __all__ = [
     "KanbnController",
