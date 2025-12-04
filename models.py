@@ -232,8 +232,9 @@ class KanbnTask:
             if current_section == "description":
                 description_lines.append(line)
             elif current_section == "subtasks" and stripped.startswith("- ["):
-                completed = stripped.startswith("- [x]")
-                text = re.sub(r"^- \[[x ]\]\s*", "", stripped)
+                # Handle both lowercase [x] and uppercase [X] for completed tasks
+                completed = stripped.startswith("- [x]") or stripped.startswith("- [X]")
+                text = re.sub(r"^- \[[xX ]\]\s*", "", stripped)
                 self._subtasks.append({"text": text, "completed": completed})
             elif current_section == "relations" and stripped.startswith("- ["):
                 self._relations.append(stripped)

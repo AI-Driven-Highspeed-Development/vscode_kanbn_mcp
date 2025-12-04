@@ -19,19 +19,36 @@ from mcps.vscode_kanbn_mcp.constants import ALL_VALID_TAGS, WORKLOAD_TAGS
 def to_kebab_case(text: str) -> str:
     """Convert text to kebab-case for filenames and task IDs.
     
-    Matches kanbn library's paramCase() behavior:
-    - Converts spaces and underscores to hyphens
-    - Removes special characters
-    - Collapses multiple hyphens
+    Matches kanbn library's paramCase() behavior exactly:
+    1. Insert hyphen before uppercase letters in camelCase (FastAPI → Fast-API)
+    2. Lowercase everything
+    3. Split on special characters (space, underscore, punctuation, etc.)
+    4. Join with hyphens
+    5. Remove leading/trailing hyphens
+    
+    Examples:
+        "Setup FastAPI Project" → "setup-fast-api-project"
+        "SQLAlchemy" → "sqlalchemy"
+        "Add workspace_core tests" → "add-workspace-core-tests"
     """
-    text = text.lower().strip()
-    # First convert underscores and spaces to hyphens (before removing special chars)
-    text = re.sub(r"[\s_]+", "-", text)
-    # Remove special characters except hyphens and alphanumerics
-    text = re.sub(r"[^a-z0-9-]", "", text)
-    # Collapse multiple hyphens
-    text = re.sub(r"-+", "-", text)
-    return text.strip("-")
+    # Step 1: Insert hyphen before capitals in camelCase sequences
+    # This regex matches: one or more uppercase letters followed by any char
+    # The replacement adds a hyphen before the match (except at start)
+    text = re.sub(
+        r"([A-Z]+(.?))",
+        lambda m: (("-" if m.start() > 0 else "") + m.group(0)).lower(),
+        text
+    )
+    
+    # Step 2: Split on special characters and whitespace, join with hyphens
+    # Matches the kanbn special char set: space, punctuation, symbols
+    parts = re.split(r"[\s!?.,@:;|\\\/\"'`£$%^&*{}\[\]()<>~#+\-=_¬]+", text)
+    
+    # Step 3: Filter empty parts and join
+    result = "-".join(p for p in parts if p)
+    
+    # Step 4: Remove leading/trailing hyphens
+    return result.strip("-")
 
 
 def now_iso() -> str:
