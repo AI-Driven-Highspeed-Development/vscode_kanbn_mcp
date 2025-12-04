@@ -104,7 +104,8 @@ def add_task(
     Creates a task file in .kanbn/tasks/ and adds a reference to the column.
     
     Args:
-        name: The task name (will be converted to kebab-case ID)
+        name: The task name (will be converted to kebab-case ID). The generated task_id
+              is immutable - save it for future update/move/delete operations.
         description: Task description/body text
         column: Column to add the task to. Defaults to "Backlog"
         tags: List of tags. Valid tags include work_type (feature, bugfix, etc.),
@@ -116,7 +117,7 @@ def add_task(
         kanbn_path: Optional path to the .kanbn directory
     
     Returns:
-        dict with success status, task_id, column, and file_path
+        dict with success status, task_id (save this for future operations), column, and file_path
     """
     return _get_kanbn().add_task(
         name=name,
@@ -172,10 +173,12 @@ def update_task(
     """Update an existing task.
     
     Only provided fields will be updated; others remain unchanged.
+    If 'name' is changed, the task file will be renamed and the board index updated
+    to maintain consistency with vscode-kanbn (task ID = paramCase(name)).
     
     Args:
-        task_id: The task ID to update
-        name: New task name
+        task_id: The current task ID to update (kebab-case)
+        name: New task name (if changed, file will be renamed and new task_id returned)
         description: New description
         tags: New list of tags (replaces existing)
         assigned: New assignee
@@ -201,15 +204,16 @@ def update_task(
 
 
 @mcp.tool()
-def get_task(task_id: str, kanbn_path: str | None = None) -> dict:
-    """Get details of a specific task.
+def get_task(task_id: str | None = None, kanbn_path: str | None = None) -> dict:
+    """Get details of a specific task, or all tasks if no task_id provided.
     
     Args:
-        task_id: The task ID to retrieve
+        task_id: The task ID to retrieve. If None, returns all tasks.
         kanbn_path: Optional path to the .kanbn directory
     
     Returns:
-        dict with task details including metadata, subtasks, and current column
+        dict with task details including metadata, subtasks, and current column.
+        If task_id is None, returns all tasks organized by column with total_count.
     """
     return _get_kanbn().get_task(task_id=task_id, kanbn_path=kanbn_path)
 

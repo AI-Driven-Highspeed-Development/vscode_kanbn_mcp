@@ -222,30 +222,7 @@ class KanbnController:
         subtasks: list[dict[str, Any]] | None = None,
         kanbn_path: str | None = None,
     ) -> dict[str, Any]:
-        """Update an existing task."""
-        board = self._get_board(kanbn_path)
-        
-        if not board.exists:
-            return {"success": False, "error": "Board not found"}
-        
-        try:
-            task = self._get_task(board, task_id)
-            
-            if not task.exists:
-                return {"success": False, "error": f"Task '{task_id}' not found."}
-            
-            task.update(
-                name=name, description=description, tags=tags,
-                assigned=assigned, due=due, progress=progress, subtasks=subtasks,
-            )
-            
-            return {"success": True, "task_id": task_id, "file_path": str(task.file_path)}
-        except Exception as e:
-            log.error(f"Failed to update task: {e}")
-            return {"success": False, "error": str(e)}
-    
-    def get_task(self, task_id: str, kanbn_path: str | None = None) -> dict[str, Any]:
-        """Get task details."""
+        """Update an existing task. If name changes, file is renamed and index updated."""
         board = self._get_board(kanbn_path)
         
         if not board.exists:
@@ -258,6 +235,73 @@ class KanbnController:
             if not task.exists:
                 return {"success": False, "error": f"Task '{task_id}' not found."}
             
+            # Check if name change requires file rename
+            new_task_id = task_id
+            if name is not None:
+                new_task_id = to_kebab_case(name)
+                if new_task_id != task_id:
+                    # Check if new ID already exists
+                    new_task = self._get_task(board, new_task_id)
+                    if new_task.exists:
+                        return {
+                            "success": False,
+                            "error": f"Cannot rename: task '{new_task_id}' already exists.",
+                        }
+            
+            # Update task content
+            task.update(
+                name=name, description=description, tags=tags,
+                assigned=assigned, due=due, progress=progress, subtasks=subtasks,
+            )
+            
+            # If name changed, rename file and update board index
+            if new_task_id != task_id:
+                new_file_path = board.tasks_path / f"{new_task_id}.md"
+                task.file_path.rename(new_file_path)
+                
+                # Update board index
+                column = board.find_task_column(task_id)
+                if column:
+                    board.remove_task_from_column(task_id, column)
+                    board.add_task_to_column(new_task_id, column)
+                    board.save()
+                
+                return {
+                    "success": True,
+                    "task_id": new_task_id,
+                    "previous_task_id": task_id,
+                    "file_path": str(new_file_path),
+                    "renamed": True,
+                }
+            
+            return {"success": True, "task_id": task_id, "file_path": str(task.file_path)}
+        except Exception as e:
+            log.error(f"Failed to update task: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def get_task(
+        self,
+        task_id: str | None = None,
+        kanbn_path: str | None = None,
+    ) -> dict[str, Any]:
+        """Get task details. If task_id is None, returns all tasks."""
+        board = self._get_board(kanbn_path)
+        
+        if not board.exists:
+            return {"success": False, "error": "Board not found"}
+        
+        try:
+            board.load()
+            
+            # If no task_id provided, return all tasks
+            if task_id is None:
+                return self._get_all_tasks(board)
+            
+            task = self._get_task(board, task_id)
+            
+            if not task.exists:
+                return {"success": False, "error": f"Task '{task_id}' not found."}
+            
             task.load()
             column = board.find_task_column(task_id)
             
@@ -265,6 +309,30 @@ class KanbnController:
         except Exception as e:
             log.error(f"Failed to get task: {e}")
             return {"success": False, "error": str(e)}
+    
+    def _get_all_tasks(self, board: KanbnBoard) -> dict[str, Any]:
+        """Get all tasks from the board organized by column."""
+        tasks_by_column: dict[str, list[dict[str, Any]]] = {}
+        all_tasks: list[dict[str, Any]] = []
+        
+        for column in board.get_columns():
+            task_ids = board.get_tasks_in_column(column)
+            tasks_by_column[column] = []
+            
+            for tid in task_ids:
+                task = self._get_task(board, tid)
+                if task.exists:
+                    task.load()
+                    task_data = {"column": column, **task.to_dict()}
+                    tasks_by_column[column].append(task_data)
+                    all_tasks.append(task_data)
+        
+        return {
+            "success": True,
+            "total_count": len(all_tasks),
+            "tasks": all_tasks,
+            "by_column": tasks_by_column,
+        }
     
     def delete_task(self, task_id: str, kanbn_path: str | None = None) -> dict[str, Any]:
         """Delete a task from the board."""
