@@ -106,3 +106,60 @@ def ensure_workload_tag(tags: list[str]) -> list[str]:
     if not any(t in workload_set for t in tags):
         tags = tags + ["Small"]
     return tags
+
+
+# --- Mermaid Gantt Chart Helpers ---
+
+# Characters that break Mermaid Gantt syntax
+MERMAID_UNSAFE_CHARS = [':', ';', '#', '"', "'", '`', '(', ')', '[', ']', '{', '}', '\n', '\r']
+
+
+def to_mermaid_id(task_id: str) -> str:
+    """Convert task_id to Mermaid-safe ID (alphanumeric + underscore only)."""
+    return task_id.replace("-", "_")
+
+
+def sanitize_mermaid_title(title: str, max_length: int = 40) -> str:
+    """Sanitize task title for Mermaid Gantt chart.
+    
+    - Removes unsafe characters
+    - Truncates to max_length
+    - Ensures non-empty result
+    """
+    result = title
+    for char in MERMAID_UNSAFE_CHARS:
+        result = result.replace(char, " ")
+    # Collapse multiple spaces
+    result = " ".join(result.split())
+    # Truncate
+    if len(result) > max_length:
+        result = result[:max_length - 3].rstrip() + "..."
+    # Ensure non-empty
+    if not result.strip():
+        result = "Task"
+    return result
+
+
+def parse_iso_date(iso_str: str | None) -> str | None:
+    """Extract YYYY-MM-DD from ISO 8601 datetime string.
+    
+    Returns None if input is None or unparseable.
+    """
+    if not iso_str or len(iso_str) < 10:
+        return None
+    # Handle both "2024-01-01T00:00:00.000Z" and "2024-01-01" formats
+    try:
+        date_part = iso_str[:10]
+        # Validate it's actually a date
+        datetime.strptime(date_part, "%Y-%m-%d")
+        return date_part
+    except (TypeError, ValueError):
+        return None
+
+
+def add_days_to_date(date_str: str, days: int = 1) -> str:
+    """Add days to a YYYY-MM-DD date string."""
+    from datetime import datetime, timedelta
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    dt += timedelta(days=days)
+    return dt.strftime("%Y-%m-%d")

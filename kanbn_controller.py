@@ -19,7 +19,14 @@ from mcps.vscode_kanbn_mcp.constants import (
     WORK_TYPE_TAGS,
     WORKLOAD_TAGS,
 )
-from mcps.vscode_kanbn_mcp.helpers import now_iso, to_kebab_case
+from mcps.vscode_kanbn_mcp.helpers import (
+    add_days_to_date,
+    now_iso,
+    parse_iso_date,
+    sanitize_mermaid_title,
+    to_kebab_case,
+    to_mermaid_id,
+)
 from mcps.vscode_kanbn_mcp.models import KanbnBoard, KanbnTask
 
 log = Logger(name="KanbnController", verbose=False)
@@ -469,6 +476,161 @@ class KanbnController:
             return {"success": False, "error": str(e)}
         except Exception as e:
             log.error(f"Failed to reorder tasks: {e}")
+            return {"success": False, "error": str(e)}
+
+    def generate_gantt_chart(
+        self,
+        kanbn_path: str | None = None,
+        include_undated: bool = True,
+    ) -> dict[str, Any]:
+        """Generate a Mermaid Gantt chart from all board tasks.
+        
+        Creates/overwrites `.kanbn/gantt_chart.md` with a Mermaid Gantt diagram.
+        
+        Args:
+            kanbn_path: Optional path to the .kanbn directory
+            include_undated: Include tasks without explicit dates (uses created date)
+        
+        Returns:
+            dict with success status, file_path, and task_count
+        """
+        board = self._get_board(kanbn_path)
+        
+        if not board.exists:
+            return {"success": False, "error": "Board not found"}
+        
+        try:
+            board.load()
+            columns = board.get_columns()
+            
+            # Collect all tasks organized by column
+            all_tasks: list[dict[str, Any]] = []
+            used_mermaid_ids: set[str] = set()
+            
+            for column in columns:
+                task_ids = board.get_tasks_in_column(column)
+                for task_id in task_ids:
+                    task = self._get_task(board, task_id)
+                    if not task.exists:
+                        continue
+                    task.load()
+                    
+                    # Extract dates from metadata
+                    meta = task._metadata
+                    created = parse_iso_date(meta.get("created"))
+                    started = parse_iso_date(meta.get("started"))
+                    completed = parse_iso_date(meta.get("completed"))
+                    due = parse_iso_date(meta.get("due"))
+                    updated = parse_iso_date(meta.get("updated"))
+                    
+                    # Determine start date: started > created
+                    start_date = started or created
+                    
+                    # Determine end date: completed > due > updated > created + 1 day
+                    end_date = completed or due or updated
+                    if not end_date and start_date:
+                        end_date = add_days_to_date(start_date, 1)
+                    
+                    # Skip if no dates at all and include_undated is False
+                    if not start_date:
+                        if not include_undated:
+                            continue
+                        # Fallback: use today
+                        start_date = now_iso()[:10]
+                        end_date = add_days_to_date(start_date, 1)
+                    
+                    # Validate: end must be >= start
+                    if end_date and start_date and end_date < start_date:
+                        end_date = start_date
+                    
+                    # Generate unique Mermaid ID
+                    base_mermaid_id = to_mermaid_id(task_id)
+                    mermaid_id = base_mermaid_id
+                    suffix = 1
+                    while mermaid_id in used_mermaid_ids:
+                        mermaid_id = f"{base_mermaid_id}_{suffix}"
+                        suffix += 1
+                    used_mermaid_ids.add(mermaid_id)
+                    
+                    # Determine task state for Mermaid
+                    state = ""
+                    if completed:
+                        state = "done"
+                    elif started:
+                        state = "active"
+                    
+                    all_tasks.append({
+                        "column": column,
+                        "task_id": task_id,
+                        "mermaid_id": mermaid_id,
+                        "name": sanitize_mermaid_title(task._name),
+                        "start": start_date,
+                        "end": end_date,
+                        "state": state,
+                    })
+            
+            # Handle empty board
+            if not all_tasks:
+                output_path = board.kanbn_path / "gantt_chart.md"
+                content = "# Gantt Chart\n\nNo tasks to chart.\n"
+                output_path.write_text(content, encoding="utf-8")
+                return {
+                    "success": True,
+                    "file_path": str(output_path),
+                    "task_count": 0,
+                    "message": "No tasks to chart",
+                }
+            
+            # Build Mermaid Gantt chart
+            lines = [
+                "# Gantt Chart",
+                "",
+                "```mermaid",
+                "gantt",
+                f"    title {sanitize_mermaid_title(board._name, max_length=60)}",
+                "    dateFormat YYYY-MM-DD",
+                "",
+            ]
+            
+            # Group tasks by column
+            current_column = None
+            for task_info in all_tasks:
+                if task_info["column"] != current_column:
+                    current_column = task_info["column"]
+                    # Sanitize section name too
+                    section_name = sanitize_mermaid_title(current_column, max_length=30)
+                    lines.append(f"    section {section_name}")
+                
+                # Build task line: "Task Name :state, id, start, end"
+                name = task_info["name"]
+                mid = task_info["mermaid_id"]
+                start = task_info["start"]
+                end = task_info["end"]
+                state = task_info["state"]
+                
+                if state:
+                    task_line = f"    {name} :{state}, {mid}, {start}, {end}"
+                else:
+                    task_line = f"    {name} :{mid}, {start}, {end}"
+                lines.append(task_line)
+            
+            lines.append("```")
+            lines.append("")
+            
+            # Write to file
+            output_path = board.kanbn_path / "gantt_chart.md"
+            content = "\n".join(lines)
+            output_path.write_text(content, encoding="utf-8")
+            
+            log.info(f"Generated Gantt chart: {output_path}")
+            
+            return {
+                "success": True,
+                "file_path": str(output_path),
+                "task_count": len(all_tasks),
+            }
+        except Exception as e:
+            log.error(f"Failed to generate Gantt chart: {e}")
             return {"success": False, "error": str(e)}
 
 

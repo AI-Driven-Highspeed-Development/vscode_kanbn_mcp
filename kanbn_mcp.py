@@ -324,6 +324,29 @@ def batch_add_tasks(
     )
 
 
+@mcp.tool()
+def generate_gantt_chart(
+    kanbn_path: str | None = None,
+    include_undated: bool = True,
+) -> dict:
+    """Generate a Mermaid Gantt chart from all board tasks.
+    
+    Creates/overwrites `.kanbn/gantt_chart.md` with a Mermaid Gantt diagram
+    visualizing all tasks with their dates organized by column.
+    
+    Args:
+        kanbn_path: Optional path to the .kanbn directory
+        include_undated: Include tasks without explicit dates (uses created date as fallback)
+    
+    Returns:
+        dict with success status, file_path, and task_count
+    """
+    return _get_kanbn().generate_gantt_chart(
+        kanbn_path=kanbn_path,
+        include_undated=include_undated,
+    )
+
+
 # --- Entry Point ---
 
 
