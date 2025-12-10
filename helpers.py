@@ -140,16 +140,26 @@ def sanitize_mermaid_title(title: str, max_length: int = 40) -> str:
     return result
 
 
-def parse_iso_date(iso_str: str | None) -> str | None:
-    """Extract YYYY-MM-DD from ISO 8601 datetime string.
+def parse_iso_date(value: str | datetime | None) -> str | None:
+    """Extract YYYY-MM-DD from ISO 8601 datetime string or datetime object.
     
+    Handles both string ISO dates and datetime objects (from YAML parsing).
     Returns None if input is None or unparseable.
     """
-    if not iso_str or len(iso_str) < 10:
+    if value is None:
         return None
+    
+    # Handle datetime objects (YAML auto-parses ISO dates)
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d")
+    
+    # Handle strings
+    if not isinstance(value, str) or len(value) < 10:
+        return None
+    
     # Handle both "2024-01-01T00:00:00.000Z" and "2024-01-01" formats
     try:
-        date_part = iso_str[:10]
+        date_part = value[:10]
         # Validate it's actually a date
         datetime.strptime(date_part, "%Y-%m-%d")
         return date_part

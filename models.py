@@ -337,6 +337,8 @@ class KanbnTask:
         tags: list[str] | None = None,
         assigned: str | None = None,
         due: str | None = None,
+        started: str | None = None,
+        completed: str | None = None,
         subtasks: list[str] | None = None,
     ) -> None:
         """Create a new task."""
@@ -364,6 +366,11 @@ class KanbnTask:
             self._metadata["assigned"] = assigned
         if due:
             self._metadata["due"] = due
+        if started:
+            self._metadata["started"] = started
+        if completed:
+            self._metadata["completed"] = completed
+            self._metadata["progress"] = 1.0  # Auto-set progress when completed
         
         self._subtasks = [{"text": st, "completed": False} for st in (subtasks or [])]
         self.save()

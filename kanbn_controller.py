@@ -115,6 +115,8 @@ class KanbnController:
         tags: list[str] | None = None,
         assigned: str | None = None,
         due: str | None = None,
+        started: str | None = None,
+        completed: str | None = None,
         subtasks: list[str] | None = None,
         kanbn_path: str | None = None,
     ) -> dict[str, Any]:
@@ -138,7 +140,8 @@ class KanbnController:
             
             task.create(
                 name=name, description=description, tags=tags,
-                assigned=assigned, due=due, subtasks=subtasks,
+                assigned=assigned, due=due, started=started,
+                completed=completed, subtasks=subtasks,
             )
             
             board.add_task_to_column(task_id, column)
@@ -225,6 +228,8 @@ class KanbnController:
         tags: list[str] | None = None,
         assigned: str | None = None,
         due: str | None = None,
+        started: str | None = None,
+        completed: str | None = None,
         progress: float | None = None,
         subtasks: list[dict[str, Any]] | None = None,
         kanbn_path: str | None = None,
@@ -258,7 +263,8 @@ class KanbnController:
             # Update task content
             task.update(
                 name=name, description=description, tags=tags,
-                assigned=assigned, due=due, progress=progress, subtasks=subtasks,
+                assigned=assigned, due=due, started=started,
+                completed=completed, progress=progress, subtasks=subtasks,
             )
             
             # If name changed, rename file and update board index

@@ -16,12 +16,14 @@ if str(Path.cwd()) not in sys.path:
     sys.path.append(str(Path.cwd()))
 
 from utils.logger_util.logger import Logger
-
+from mcps.vscode_kanbn_mcp.kanbn_controller import KanbnController
 
 def main() -> None:
     """Register this MCP in .vscode/mcp.json."""
     logger = Logger(name="vscode_kanbn_mcpRefresh")
     logger.info("Starting vscode_kanbn_mcp refresh...")
+
+    KanbnController().generate_gantt_chart()
 
     try:
         mcp_json_path = Path.cwd() / ".vscode" / "mcp.json"

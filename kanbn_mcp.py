@@ -96,6 +96,8 @@ def add_task(
     tags: list[str] | None = None,
     assigned: str | None = None,
     due: str | None = None,
+    started: str | None = None,
+    completed: str | None = None,
     subtasks: list[str] | None = None,
     kanbn_path: str | None = None,
 ) -> dict:
@@ -113,6 +115,9 @@ def add_task(
               workload (Tiny, Small, Medium, Large, Huge). Defaults to ["Small"] if none.
         assigned: Person assigned to the task
         due: Due date in ISO format (YYYY-MM-DD)
+        started: Started date in ISO format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD)
+        completed: Completed date in ISO format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD).
+                   Setting this will also set progress to 1.0.
         subtasks: List of subtask descriptions
         kanbn_path: Optional path to the .kanbn directory
     
@@ -126,6 +131,8 @@ def add_task(
         tags=tags,
         assigned=assigned,
         due=due,
+        started=started,
+        completed=completed,
         subtasks=subtasks,
         kanbn_path=kanbn_path,
     )
@@ -166,6 +173,8 @@ def update_task(
     tags: list[str] | None = None,
     assigned: str | None = None,
     due: str | None = None,
+    started: str | None = None,
+    completed: str | None = None,
     progress: float | None = None,
     subtasks: list[dict] | None = None,
     kanbn_path: str | None = None,
@@ -182,7 +191,9 @@ def update_task(
         description: New description
         tags: New list of tags (replaces existing)
         assigned: New assignee
-        due: New due date
+        due: New due date in ISO format (YYYY-MM-DD)
+        started: Started date in ISO format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD)
+        completed: Completed date in ISO format (YYYY-MM-DDTHH:MM:SS.sssZ or YYYY-MM-DD)
         progress: New progress value (0.0 to 1.0)
         subtasks: New subtasks list. Each item is a dict with 'text' and optional 'completed'
         kanbn_path: Optional path to the .kanbn directory
@@ -197,6 +208,8 @@ def update_task(
         tags=tags,
         assigned=assigned,
         due=due,
+        started=started,
+        completed=completed,
         progress=progress,
         subtasks=subtasks,
         kanbn_path=kanbn_path,
