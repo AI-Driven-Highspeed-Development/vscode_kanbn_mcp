@@ -57,9 +57,10 @@ class KanbnBoard:
         for line in body.split("\n"):
             line_stripped = line.strip()
             
-            # Level-1 heading = project name
+            # Level-1 heading = project name (only capture the FIRST one)
             if line_stripped.startswith("# ") and not line_stripped.startswith("## "):
-                self._name = line_stripped[2:].strip()
+                if not self._name:
+                    self._name = line_stripped[2:].strip()
                 continue
             
             # Level-2 heading = column
@@ -238,9 +239,23 @@ class KanbnTask:
         
         current_section = None
         description_lines = []
+        in_code_block = False
         
         for line in body.split("\n"):
             stripped = line.strip()
+            
+            # Toggle code fence state - content inside code blocks is not parsed
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                if current_section == "description":
+                    description_lines.append(line)
+                continue
+            
+            # Skip markdown parsing if inside code block
+            if in_code_block:
+                if current_section == "description":
+                    description_lines.append(line)
+                continue
             
             # Level-1 heading = task name (only capture the FIRST one)
             if stripped.startswith("# ") and not stripped.startswith("## "):
