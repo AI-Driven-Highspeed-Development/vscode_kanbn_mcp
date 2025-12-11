@@ -242,11 +242,13 @@ class KanbnTask:
         for line in body.split("\n"):
             stripped = line.strip()
             
-            # Level-1 heading = task name
+            # Level-1 heading = task name (only capture the FIRST one)
             if stripped.startswith("# ") and not stripped.startswith("## "):
-                self._name = stripped[2:].strip()
-                current_section = "description"
-                continue
+                if not self._name:
+                    self._name = stripped[2:].strip()
+                    current_section = "description"
+                    continue
+                # Subsequent # headings in description are kept as content
             
             # Level-2 heading = section
             if stripped.startswith("## "):
