@@ -1,7 +1,7 @@
 """
 Refresh script for vscode_kanbn_mcp.
 
-Registers this MCP server in .vscode/mcp.json.
+Registers this MCP server in .vscode/mcp.json and optionally registers CLI commands.
 Run via: python adhd_framework.py refresh --module vscode_kanbn_mcp
 """
 
@@ -17,6 +17,17 @@ if str(Path.cwd()) not in sys.path:
 
 from utils.logger_util.logger import Logger
 from mcps.vscode_kanbn_mcp.kanbn_controller import KanbnController
+
+
+def _register_cli() -> None:
+    """Register CLI commands if cli_manager is available."""
+    try:
+        from mcps.vscode_kanbn_mcp.kanbn_cli import register_cli
+        register_cli()
+    except ImportError:
+        # cli_manager not available or CLI file not created yet - skip silently
+        pass
+
 
 def main() -> None:
     """Register this MCP in .vscode/mcp.json."""
@@ -62,6 +73,9 @@ def main() -> None:
             logger.info(f"Added '{mcp_key}' to {mcp_json_path}")
         else:
             logger.info(f"'{mcp_key}' already exists in {mcp_json_path}, skipping")
+        
+        # Register CLI commands (optional - skipped if cli_manager unavailable)
+        _register_cli()
         
         logger.info("vscode_kanbn_mcp refresh completed successfully.")
     except Exception as e:
