@@ -3,4 +3,5 @@ folder_path: mcps/vscode_kanbn_mcp
 type: mcp
 requirements:
   - https://github.com/AI-Driven-Highspeed-Development/Logger-Util.git
+  - https://github.com/AI-Driven-Highspeed-Development/cli_manager.git
 repo_url: https://github.com/AI-Driven-Highspeed-Development/vscode_kanbn_mcp.git
