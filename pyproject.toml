@@ -1,0 +1,22 @@
+[project]
+name = "vscode-kanbn-mcp"
+version = "0.0.1"
+description = "ADHD Framework mcp: vscode_kanbn_mcp"
+requires-python = ">=3.11"
+dependencies = [
+    "logger-util",
+    "cli-manager",
+    "mcp[cli]>=1.9.0",
+    "PyYAML>=6.0",
+]
+
+[tool.adhd]
+type = "mcp"
+layer = "dev"
+
+[tool.uv.sources]
+logger-util = { workspace = true }
+cli-manager = { workspace = true }
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
